@@ -190,4 +190,29 @@ describe('score.ts — 45/35/20 Productivity Score & Zero-Item Ring Rules', () =
     expect(todaySummary.rings.focus.percentage).toBe(25);
     expect(todaySummary.score).toBe(11); // round(0.25 * 45) = 11
   });
+
+  it('uses completedSegments across pause/resume cycles and caps countdown overrun', () => {
+    const seg1Start = new Date(2026, 10, 26, 4, 40, 0).getTime();
+    const seg1End = new Date(2026, 10, 26, 4, 55, 0).getTime(); // 15m on Nov 25
+    const seg2Start = new Date(2026, 10, 26, 5, 10, 0).getTime();
+    const nowMs = new Date(2026, 10, 26, 6, 0, 0).getTime(); // 50m elapsed in seg2, but 25m countdown target!
+
+    const activeTimer: ActiveTimerState = {
+      subjectId: 'math',
+      mode: 'countdown',
+      status: 'running',
+      segmentStartTime: seg2Start,
+      accumulatedMs: 15 * 60 * 1000,
+      targetDurationMs: 25 * 60 * 1000, // only 10m left for seg2
+      sessionStartTime: seg1Start,
+      completedSegments: [{ startTime: seg1Start, endTime: seg1End }],
+    };
+
+    expect(
+      getActiveTimerSecondsForLogicalDate(activeTimer, '2026-11-25', nowMs),
+    ).toBe(900); // 15m
+    expect(
+      getActiveTimerSecondsForLogicalDate(activeTimer, '2026-11-26', nowMs),
+    ).toBe(600); // capped at remaining 10m
+  });
 });

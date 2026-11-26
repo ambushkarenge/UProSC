@@ -227,6 +227,7 @@ describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
   describe.each(PLATFORM_PROFILES)('$name ($width x $height)', (profile) => {
     it('renders strict 3-tab shell, safe-area guards, and landscape compact rules in light & dark themes', () => {
       for (const scheme of ['light', 'dark'] as const) {
+        useAppStore.getState().resetAllData();
         applyEnvironment(profile, scheme);
         expect(
           window.matchMedia(`(orientation: ${profile.orientation})`).matches,
@@ -267,6 +268,52 @@ describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
         expect(nav.className).toContain('env(safe-area-inset-right)');
         expect(main.className).toContain('orientation:landscape');
 
+        // Phase 3: Focus Timer, Subject quick-add, Full-Screen Clock & Landscape safe-area checks
+        expect(
+          screen.getByRole('heading', {
+            name: 'Focus Timer & Study Analytics',
+          }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('heading', { name: 'Subjects' }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('heading', { name: 'D-Day Study Goal' }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole('heading', { name: 'Focus Analytics' }),
+        ).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: '+ Coding' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Start Focus' }));
+        expect(screen.getByTestId('timer-status-pill')).toHaveTextContent(
+          'Focusing',
+        );
+
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Open full-screen focus clock' }),
+        );
+        const fsDialog = screen.getByRole('dialog', {
+          name: 'Full-screen focus clock',
+        });
+        expect(fsDialog.className).toContain('inset-0');
+        expect(fsDialog.className).toContain('env(safe-area-inset-top)');
+        expect(fsDialog.className).toContain('env(safe-area-inset-bottom)');
+        expect(fsDialog.className).toContain('env(safe-area-inset-left)');
+        expect(fsDialog.className).toContain('env(safe-area-inset-right)');
+        expect(fsDialog.innerHTML).toContain('orientation:landscape');
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(
+          screen.queryByRole('dialog', { name: 'Full-screen focus clock' }),
+        ).not.toBeInTheDocument();
+
+        act(() => {
+          vi.advanceTimersByTime(60000);
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Finish & Save' }));
+        expect(useAppStore.getState().sessions).toHaveLength(1);
+
         // Interactive tab switching works across all 3 tabs
         fireEvent.click(screen.getByRole('tab', { name: 'To-Do' }));
         expect(screen.getByRole('tab', { name: 'To-Do' })).toHaveAttribute(
@@ -300,12 +347,15 @@ describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
         const ringsButton = screen.getByRole('button', {
           name: 'Daily activity rings summary',
         });
+
+        act(() => {
+          useAppStore.getState().resetAllData();
+        });
         expect(
           screen.getByTestId('productivity-score-value'),
         ).toHaveTextContent('0');
 
         act(() => {
-          useAppStore.getState().resetAllData();
           const today = getLogicalStudyDate(Date.now());
           const now = Date.now();
           useAppStore

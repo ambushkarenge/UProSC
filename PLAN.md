@@ -131,8 +131,9 @@ export interface Habit {
 - **Goal:** Implement count-up stopwatch + countdown Pomodoro/custom blocks, subject management, timestamp-accurate logging, Full-Screen + Screen Wake Lock API, D-Day goal tracker, SVG analytics charts, and Duolingo-inspired positive/loss-aversion companion.
 - **Web Dev Concepts:** Timestamp-delta timing vs `setInterval` throttling, Screen Wake Lock & Page Visibility APIs, Web Audio synthesis chimes, custom SVG charts (timeline, donut, peak hours), behavioral pace derivation.
 - **Files:**
-  - `[NEW]` `src/hooks/useTimestampTimer.ts`, `src/hooks/useWakeLock.ts`, `src/utils/sound.ts`
-  - `[NEW]` `src/features/timer/TimerTab.tsx`, `FullScreenClock.tsx`, `SubjectManager.tsx`, `DDayTracker.tsx`, `BehavioralCompanion.tsx`, `FocusAnalytics.tsx`
+  - `[NEW]` `src/hooks/useTimestampTimer.ts`, `src/hooks/useWakeLock.ts`, `src/utils/sound.ts`, `src/utils/focusAnalytics.ts`, `src/utils/behavioral.ts`
+  - `[NEW]` `src/features/timer/TimerTab.tsx`, `FullScreenClock.tsx`, `SubjectManager.tsx`, `DDayTracker.tsx`, `BehavioralCompanion.tsx`, `FocusAnalytics.tsx`, `subjectColors.ts`
+  - `[MODIFY]` `src/types/domain.ts`, `src/utils/score.ts`, `src/store/useAppStore.ts`, `src/components/Header/AppHeader.tsx`, `src/App.tsx`
 
 ### Phase 4: To-Do List, Multi-Day Auto-Split & Calendar / `.ics` Integration (Tab 2)
 - **Goal:** Implement Today's Tasks (5:00 AM boundary) with priority tags feeding Ring 2, One-Time & Multi-Day tasks with *"Split Evenly Across Days"*, collapsible Monthly/Weekly Calendar view (task loads, spans, deadlines, D-Day), and one-click RFC 5545 `.ics` export.

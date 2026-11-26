@@ -1,6 +1,6 @@
 # PROGRESS.md — UProSC Live Status & Memory Log
 
-**Current Status:** **Phase 2 Complete — Paused before Phase 3** (awaiting user's explicit go-ahead for Phase 3).  
+**Current Status:** **Phase 3 Complete — Paused before Phase 4** (awaiting user's explicit go-ahead for Phase 4).  
 **Last Updated:** 2026-11-26
 
 ---
@@ -27,11 +27,21 @@
   - `src/components/Header/ActivityRing.tsx` (SVG `stroke-dasharray` / `stroke-dashoffset` single & concentric 3-ring gauges)
   - Updated `src/components/Header/AppHeader.tsx` (live 3-ring readouts, hover/click/touch-hold breakdown popover, daily goal quick-presets & steppers)
   - Tests added/updated: `src/utils/__tests__/date.test.ts`, `src/utils/__tests__/score.test.ts`, `src/store/__tests__/useAppStore.test.ts`, `src/components/Header/__tests__/AppHeader.test.tsx`, `src/__tests__/App.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
+- **Phase 3 Implemented Files & Features:**
+  - Extended `src/types/domain.ts` (`TimerSegment`, `completedSegments`), `src/utils/score.ts` (`completedSegments` & countdown cap), and `src/store/useAppStore.ts` (`soundEnabled`, `deleteSubject`, `deleteStudySession`, `DEFAULT_COUNTDOWN_DURATION_MS`)
+  - `src/utils/sound.ts` (offline Web Audio synthesis completion & celebration chimes)
+  - `src/utils/focusAnalytics.ts` (`computeSubjectBreakdown`, `computeDailyTimeline` 5:00 AM–5:00 AM, `computePeakHours`, `computeDDayProgress`)
+  - `src/utils/behavioral.ts` (`computeStudyStreak` without morning false-zero reset, `deriveBehavioralInsight` positive/loss-aversion companion)
+  - `src/hooks/useWakeLock.ts` (Screen Wake Lock API + `visibilitychange` re-acquisition + fallback status)
+  - `src/hooks/useTimestampTimer.ts` (wall-clock delta stopwatch + Pomodoro/custom countdown, pause/resume segment tracking, countdown auto-completion)
+  - `src/features/timer/`: `TimerTab.tsx`, `FullScreenClock.tsx`, `SubjectManager.tsx`, `DDayTracker.tsx`, `BehavioralCompanion.tsx`, `FocusAnalytics.tsx`, `subjectColors.ts`
+  - Wired `TimerTab` into `src/App.tsx` and immediate clock sync on status change in `src/components/Header/AppHeader.tsx`
+  - Tests added/updated: `src/utils/__tests__/focusAnalytics.test.ts`, `src/utils/__tests__/behavioral.test.ts`, `src/utils/__tests__/score.test.ts`, `src/store/__tests__/useAppStore.test.ts`, `src/hooks/__tests__/useWakeLock.test.ts`, `src/hooks/__tests__/useTimestampTimer.test.ts`, `src/features/timer/__tests__/TimerTab.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
 - **Removed:** Leftover `.next/` directory deleted and Next.js `.gitignore` replaced.
-- **Verified Local Toolchain & Phase 2 Checks:**
+- **Verified Local Toolchain & Phase 3 Checks:**
   - Node.js `v26.12.0` (`/opt/homebrew/bin/node`), npm `11.20.0`, Git `2.54.0`
   - `npx tsc --noEmit` passing
-  - `npx vitest run` passing (`30` tests across `6` test files, including multi-timezone `America/New_York`, `UTC`, `Asia/Kolkata` and `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape checks)
+  - `npx vitest run` passing (`48` tests across `11` test files, verified across `America/New_York`, `UTC`, `Asia/Kolkata` and `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape profiles in light/dark themes)
   - `npm run build` passing (generates `dist/manifest.webmanifest`, `dist/sw.js` with 10 precache entries, and `dist/registerSW.js`)
 
 ---
@@ -53,14 +63,14 @@
   - [x] Zustand + IndexedDB (`idb-keyval`) persisted store
   - [x] Interactive SVG 3-Ring Header + hover/long-press popovers
   - [x] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
-- [ ] **Phase 3: Focus Timer, Wake Lock, Analytics, Behavioral Engine & D-Day Tracker (Tab 1)**
-  - [ ] Subject manager (CRUD, color, archive, daily goal, daily totals)
-  - [ ] Timestamp-accurate Stopwatch + Countdown Pomodoro/custom timer
-  - [ ] Full-Screen Mode + Screen Wake Lock API + Web Audio chime
-  - [ ] D-Day target date & cumulative study-hour goal tracker
-  - [ ] Daily timeline, subject donut, peak hours SVG analytics
-  - [ ] Duolingo-inspired positive celebrations & pace/streak-at-risk companion
-  - [ ] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
+- [x] **Phase 3: Focus Timer, Wake Lock, Analytics, Behavioral Engine & D-Day Tracker (Tab 1)**
+  - [x] Subject manager (CRUD, color, archive, daily goal, daily totals)
+  - [x] Timestamp-accurate Stopwatch + Countdown Pomodoro/custom timer
+  - [x] Full-Screen Mode + Screen Wake Lock API + Web Audio chime
+  - [x] D-Day target date & cumulative study-hour goal tracker
+  - [x] Daily timeline, subject donut, peak hours SVG analytics
+  - [x] Duolingo-inspired positive celebrations & pace/streak-at-risk companion
+  - [x] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
 - [ ] **Phase 4: To-Do List, Multi-Day Auto-Split & Calendar / `.ics` Integration (Tab 2)**
   - [ ] Today's Tasks (5:00 AM boundary) + priority tags + Ring 2 sync
   - [ ] One-Time & Multi-Day tasks with *"Split Evenly Across Days"* + unit tests
@@ -99,8 +109,9 @@
 - **2026-11-26 — Day-1 Deployment Live & Cross-Platform Portrait/Landscape Testing Rule Added:** User linked GitHub (`ambushkarenge/UProSC`) + Cloudflare (`https://uprosc.ambush-darth.workers.dev`). Added mandatory per-phase testing rule across **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts in `AGENT.md`, `PLAN.md`, and `PROGRESS.md`, plus `src/__tests__/crossPlatformLayout.test.tsx` (8 profiles) and landscape safe-area polish.
 - **2026-11-26 — Phase 2 Implemented & Verified:** Installed `zustand` and `idb-keyval`; built `src/types/domain.ts`, 5:00 AM local logical-date & boundary-splitting engine (`src/utils/date.ts`), `45/35/20` Productivity Score + zero-item ring engine (`src/utils/score.ts`), offline IndexedDB + `localStorage` active-timer mirror store (`src/store/idbStorage.ts`, `src/store/useAppStore.ts`), and interactive SVG 3-Ring Header + hover/click/touch-hold breakdown popover with daily goal controls (`src/components/Header/ActivityRing.tsx`, `src/components/Header/AppHeader.tsx`). Verified `tsc --noEmit`, `vitest run` (`30` tests across `6` files and 3 timezones), and `npm run build`.
 - **2026-11-26 — Phase 2 Wrap-Up & CI Setup:** Added `.github/workflows/ci.yml` and updated `AGENT.md` with the End-of-Phase `commit` + `git push origin main` checklist before Phase 3.
+- **2026-11-26 — Phase 3 Implemented & Verified:** Built Tab 1 (`TimerTab`, `FullScreenClock`, `SubjectManager`, `DDayTracker`, `BehavioralCompanion`, `FocusAnalytics`), timestamp-delta timer hook (`useTimestampTimer`), Screen Wake Lock hook (`useWakeLock`), Web Audio chimes (`sound.ts`), analytics/streak engines (`focusAnalytics.ts`, `behavioral.ts`), and 18 new unit/feature/cross-platform tests (`48` tests passing across `11` files).
 
 ---
 
 ## 4. Next Immediate Step
-Wait for the user's explicit go-ahead for **Phase 3**. On approval, build **Tab 1 (Focus Timer & Analytics)**: subject manager (CRUD, colors, archiving, daily goals), timestamp-accurate stopwatch + countdown Pomodoro timer (`useTimestampTimer.ts`), Full-Screen Clock + Screen Wake Lock API (`useWakeLock.ts`), Web Audio chimes (`sound.ts`), D-Day target/hour tracker (`DDayTracker.tsx`), SVG focus analytics (`FocusAnalytics.tsx`), Duolingo-style behavioral pace companion (`BehavioralCompanion.tsx`), and cross-platform Portrait & Landscape tests.
+Explain Phase 3 completion and what Phase 4 will implement, then wait for the user's explicit go-ahead for **Phase 4** (`To-Do List, Multi-Day Auto-Split & Calendar / .ics Integration` in Tab 2: Today's Tasks anchored to 5:00 AM, priority tags feeding Ring 2, Multi-Day *"Split Evenly Across Days"* planner, collapsible Monthly/Weekly Calendar view with D-Day markers, RFC 5545 `.ics` export, and cross-platform Portrait & Landscape tests).

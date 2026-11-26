@@ -80,7 +80,17 @@ export function getActiveTimerElapsedMs(
       ? Math.max(0, nowMs - activeTimer.segmentStartTime)
       : 0;
 
-  return Math.max(0, activeTimer.accumulatedMs) + runningMs;
+  const rawElapsed = Math.max(0, activeTimer.accumulatedMs) + runningMs;
+
+  if (
+    activeTimer.mode === 'countdown' &&
+    typeof activeTimer.targetDurationMs === 'number' &&
+    activeTimer.targetDurationMs > 0
+  ) {
+    return Math.min(activeTimer.targetDurationMs, rawElapsed);
+  }
+
+  return rawElapsed;
 }
 
 /**
@@ -101,7 +111,18 @@ export function getActiveTimerSecondsForLogicalDate(
 
   let totalMsForDay = 0;
 
-  if (activeTimer.accumulatedMs > 0) {
+  if (
+    activeTimer.completedSegments &&
+    activeTimer.completedSegments.length > 0
+  ) {
+    for (const seg of activeTimer.completedSegments) {
+      const overlapStart = Math.max(seg.startTime, dayStart);
+      const overlapEnd = Math.min(seg.endTime, dayEnd);
+      if (overlapEnd > overlapStart) {
+        totalMsForDay += overlapEnd - overlapStart;
+      }
+    }
+  } else if (activeTimer.accumulatedMs > 0) {
     const anchorTs = activeTimer.sessionStartTime ?? nowMs;
     if (getLogicalStudyDate(anchorTs) === targetLogicalDate) {
       totalMsForDay += activeTimer.accumulatedMs;
@@ -113,8 +134,24 @@ export function getActiveTimerSecondsForLogicalDate(
     activeTimer.segmentStartTime !== null &&
     nowMs > activeTimer.segmentStartTime
   ) {
+    let effectiveEndMs = nowMs;
+    if (
+      activeTimer.mode === 'countdown' &&
+      typeof activeTimer.targetDurationMs === 'number' &&
+      activeTimer.targetDurationMs > 0
+    ) {
+      const remainingForSegment = Math.max(
+        0,
+        activeTimer.targetDurationMs - activeTimer.accumulatedMs,
+      );
+      effectiveEndMs = Math.min(
+        nowMs,
+        activeTimer.segmentStartTime + remainingForSegment,
+      );
+    }
+
     const overlapStart = Math.max(activeTimer.segmentStartTime, dayStart);
-    const overlapEnd = Math.min(nowMs, dayEnd);
+    const overlapEnd = Math.min(effectiveEndMs, dayEnd);
     if (overlapEnd > overlapStart) {
       totalMsForDay += overlapEnd - overlapStart;
     }

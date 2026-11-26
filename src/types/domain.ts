@@ -65,6 +65,11 @@ export interface DDayGoal {
 export type TimerMode = 'stopwatch' | 'countdown';
 export type TimerStatus = 'idle' | 'running' | 'paused';
 
+export interface TimerSegment {
+  startTime: number; // epoch ms
+  endTime: number; // epoch ms
+}
+
 export interface ActiveTimerState {
   subjectId: string | null;
   mode: TimerMode;
@@ -73,6 +78,7 @@ export interface ActiveTimerState {
   accumulatedMs: number; // elapsed ms prior to current running segment
   targetDurationMs?: number; // target duration for countdown mode
   sessionStartTime: number | null; // epoch ms when the overall session began
+  completedSegments?: TimerSegment[]; // exact focused intervals before pause/resume
 }
 
 export type RingKey = 'focus' | 'todo' | 'habits';

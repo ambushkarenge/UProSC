@@ -107,4 +107,34 @@ describe('useAppStore & offline persistence', () => {
       });
     }
   });
+
+  it('supports subject CRUD, sound preference, and deleting logged sessions', () => {
+    const store = useAppStore.getState();
+    const subj = store.addSubject({
+      name: 'Physics',
+      color: '#f43f5e',
+      dailyGoalMinutes: 90,
+    });
+
+    expect(useAppStore.getState().subjects).toHaveLength(1);
+    store.updateSubject(subj.id, { name: 'Quantum Physics', dailyGoalMinutes: 120 });
+    expect(useAppStore.getState().subjects[0].name).toBe('Quantum Physics');
+    expect(useAppStore.getState().subjects[0].dailyGoalMinutes).toBe(120);
+
+    store.toggleArchiveSubject(subj.id);
+    expect(useAppStore.getState().subjects[0].archived).toBe(true);
+
+    const end = new Date(2026, 10, 26, 12, 0, 0).getTime();
+    const created = store.logStudySession(subj.id, end - 1800_000, end);
+    expect(useAppStore.getState().sessions).toHaveLength(1);
+
+    store.deleteStudySession(created[0].id);
+    expect(useAppStore.getState().sessions).toHaveLength(0);
+
+    store.deleteSubject(subj.id);
+    expect(useAppStore.getState().subjects).toHaveLength(0);
+
+    store.setSoundEnabled(false);
+    expect(useAppStore.getState().soundEnabled).toBe(false);
+  });
 });

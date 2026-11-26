@@ -22,6 +22,7 @@ export const STORE_STORAGE_KEY = 'uprosc-app-state';
 export const DEFAULT_DAILY_STUDY_GOAL_MINUTES = 120;
 export const MIN_DAILY_STUDY_GOAL_MINUTES = 15;
 export const MAX_DAILY_STUDY_GOAL_MINUTES = 1440;
+export const DEFAULT_COUNTDOWN_DURATION_MS = 25 * 60 * 1000;
 
 export const DEFAULT_ACTIVE_TIMER: ActiveTimerState = {
   subjectId: null,
@@ -29,7 +30,9 @@ export const DEFAULT_ACTIVE_TIMER: ActiveTimerState = {
   status: 'idle',
   segmentStartTime: null,
   accumulatedMs: 0,
+  targetDurationMs: DEFAULT_COUNTDOWN_DURATION_MS,
   sessionStartTime: null,
+  completedSegments: [],
 };
 
 function createId(prefix: string): string {
@@ -54,6 +57,7 @@ export function clampDailyGoalMinutes(minutes: number): number {
 
 export interface PersistedAppData {
   dailyStudyGoalMinutes: number;
+  soundEnabled: boolean;
   subjects: Subject[];
   sessions: StudySession[];
   tasks: TodoTask[];
@@ -68,6 +72,7 @@ export interface AppStoreState extends PersistedAppData {
   hasHydrated: boolean;
   setHasHydrated: (hydrated: boolean) => void;
   setDailyStudyGoalMinutes: (minutes: number) => void;
+  setSoundEnabled: (enabled: boolean) => void;
   addSubject: (input: {
     name: string;
     color: string;
@@ -78,11 +83,13 @@ export interface AppStoreState extends PersistedAppData {
     patch: Partial<Pick<Subject, 'name' | 'color' | 'dailyGoalMinutes'>>,
   ) => void;
   toggleArchiveSubject: (id: string) => void;
+  deleteSubject: (id: string) => void;
   logStudySession: (
     subjectId: string,
     startTime: number,
     endTime: number,
   ) => StudySession[];
+  deleteStudySession: (sessionId: string) => void;
   addTask: (
     input: Omit<TodoTask, 'id' | 'completed'> & { completed?: boolean },
   ) => TodoTask;
@@ -105,6 +112,7 @@ function createInitialPersistedData(): PersistedAppData {
   const mirror = readActiveTimerMirror();
   return {
     dailyStudyGoalMinutes: DEFAULT_DAILY_STUDY_GOAL_MINUTES,
+    soundEnabled: true,
     subjects: [],
     sessions: [],
     tasks: [],
@@ -129,6 +137,8 @@ export const useAppStore = create<AppStoreState>()(
           dailyStudyGoalMinutes: clampDailyGoalMinutes(minutes),
         }),
 
+      setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+
       addSubject: ({ name, color, dailyGoalMinutes = 60 }) => {
         const created: Subject = {
           id: createId('subj'),
@@ -145,7 +155,18 @@ export const useAppStore = create<AppStoreState>()(
       updateSubject: (id, patch) =>
         set((state) => ({
           subjects: state.subjects.map((subject) =>
-            subject.id === id ? { ...subject, ...patch } : subject,
+            subject.id === id
+              ? {
+                  ...subject,
+                  ...patch,
+                  name:
+                    patch.name !== undefined ? patch.name.trim() : subject.name,
+                  dailyGoalMinutes:
+                    patch.dailyGoalMinutes !== undefined
+                      ? Math.max(5, Math.round(patch.dailyGoalMinutes))
+                      : subject.dailyGoalMinutes,
+                }
+              : subject,
           ),
         })),
 
@@ -157,6 +178,19 @@ export const useAppStore = create<AppStoreState>()(
               : subject,
           ),
         })),
+
+      deleteSubject: (id) =>
+        set((state) => {
+          const shouldClearActive =
+            state.activeTimer.status === 'idle' &&
+            state.activeTimer.subjectId === id;
+          return {
+            subjects: state.subjects.filter((subject) => subject.id !== id),
+            activeTimer: shouldClearActive
+              ? { ...state.activeTimer, subjectId: null }
+              : state.activeTimer,
+          };
+        }),
 
       logStudySession: (subjectId, startTime, endTime) => {
         const segments = splitSessionByLogicalDay({
@@ -171,6 +205,11 @@ export const useAppStore = create<AppStoreState>()(
         }
         return segments;
       },
+
+      deleteStudySession: (sessionId) =>
+        set((state) => ({
+          sessions: state.sessions.filter((session) => session.id !== sessionId),
+        })),
 
       addTask: (input) => {
         const created: TodoTask = {
@@ -247,6 +286,7 @@ export const useAppStore = create<AppStoreState>()(
         clearActiveTimerMirror();
         set({
           dailyStudyGoalMinutes: DEFAULT_DAILY_STUDY_GOAL_MINUTES,
+          soundEnabled: true,
           subjects: [],
           sessions: [],
           tasks: [],
@@ -264,6 +304,7 @@ export const useAppStore = create<AppStoreState>()(
       storage: createJSONStorage(() => idbStorage),
       partialize: (state): PersistedAppData => ({
         dailyStudyGoalMinutes: state.dailyStudyGoalMinutes,
+        soundEnabled: state.soundEnabled,
         subjects: state.subjects,
         sessions: state.sessions,
         tasks: state.tasks,

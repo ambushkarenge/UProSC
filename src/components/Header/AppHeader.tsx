@@ -54,6 +54,7 @@ export function AppHeader() {
   // Keep logical study date and live running timer progress accurate across time & 5:00 AM rollover
   useEffect(() => {
     const syncClock = () => setNowMs(Date.now());
+    syncClock();
     const intervalMs = activeTimer.status === 'running' ? 1000 : 30000;
     const intervalId = window.setInterval(syncClock, intervalMs);
 
@@ -249,7 +250,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
-      <div className="relative mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-1.5">
+      <div className="relative mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-1.5">
         {/* Brand Identity */}
         <div className="flex items-center gap-2.5">
           <img
