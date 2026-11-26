@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Grip, Minus, Plus, Sparkles, X } from 'lucide-react';
+import { Grip, Minus, Plus, Sparkles, User, X } from 'lucide-react';
+import {
+  getActiveUserProfileSync,
+  subscribeAccountRegistry,
+} from '../../store/accountManager';
 import {
   DEFAULT_DAILY_STUDY_GOAL_MINUTES,
   MAX_DAILY_STUDY_GOAL_MINUTES,
   MIN_DAILY_STUDY_GOAL_MINUTES,
   useAppStore,
 } from '../../store/useAppStore';
+import { useSyncStatus } from '../../sync/syncEngine';
 import {
   formatLogicalDateShort,
   formatMinutesCompact,
@@ -15,6 +20,7 @@ import {
   calculateDailyProductivity,
   PRODUCTIVITY_SCORE_WEIGHTS,
 } from '../../utils/score';
+import { AccountSyncModal } from './AccountSyncModal';
 import { ActivityRing, ConcentricActivityRings } from './ActivityRing';
 
 const GOAL_PRESET_MINUTES = [60, 120, 240, 360] as const;
@@ -39,8 +45,25 @@ export function AppHeader() {
 
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [launcherOpen, setLauncherOpen] = useState(false);
+  const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [ringsPinnedOpen, setRingsPinnedOpen] = useState(false);
   const [ringsHoverOpen, setRingsHoverOpen] = useState(false);
+  const [activeProfile, setActiveProfile] = useState(() =>
+    getActiveUserProfileSync(),
+  );
+  const syncStatus = useSyncStatus();
+
+  useEffect(() => {
+    setActiveProfile(getActiveUserProfileSync());
+    return subscribeAccountRegistry((registry) => {
+      const found =
+        registry.profiles.find((p) => p.id === registry.activeUserId) ??
+        registry.profiles[0];
+      if (found) {
+        setActiveProfile(found);
+      }
+    });
+  }, []);
 
   const ringsContainerRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLDivElement>(null);
@@ -245,10 +268,29 @@ export function AppHeader() {
 
   const toggleLauncher = () => {
     closeRingsPopover();
+    setAccountModalOpen(false);
     setLauncherOpen((open) => !open);
   };
 
+  const openAccountModal = () => {
+    closeRingsPopover();
+    setLauncherOpen(false);
+    setAccountModalOpen(true);
+  };
+
+  const syncDotClass =
+    syncStatus.status === 'syncing'
+      ? 'bg-sky-500 animate-pulse'
+      : syncStatus.status === 'synced' && syncStatus.pendingCount === 0
+        ? 'bg-emerald-500'
+        : syncStatus.status === 'auth_required' || syncStatus.status === 'error'
+          ? 'bg-rose-500'
+          : syncStatus.status === 'offline' || syncStatus.pendingCount > 0
+            ? 'bg-amber-500'
+            : 'bg-slate-400';
+
   return (
+    <>
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
       <div className="relative mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-1.5">
         {/* Brand Identity */}
@@ -470,54 +512,87 @@ export function AppHeader() {
           )}
         </div>
 
-        {/* 9-Dot App Launcher */}
-        <div ref={launcherRef} className="relative">
+        {/* Right Controls: User/Sync Pill + 9-Dot App Launcher */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             type="button"
-            onClick={toggleLauncher}
-            aria-label="Open app launcher"
-            aria-expanded={launcherOpen}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            data-testid="account-sync-pill"
+            onClick={openAccountModal}
+            aria-label="Account and sync settings"
+            aria-expanded={accountModalOpen}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 active:scale-95 sm:px-2.5 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            <Grip className="h-5 w-5" aria-hidden="true" />
-            <kbd className="hidden rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 sm:inline-block dark:bg-slate-800 dark:text-slate-400">
-              ⌘K
-            </kbd>
+            <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <User className="h-3.5 w-3.5" aria-hidden="true" />
+              <span
+                aria-hidden="true"
+                className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-white dark:ring-slate-900 ${syncDotClass}`}
+              />
+            </span>
+            <span className="hidden max-w-[6.5rem] truncate md:inline">
+              {activeProfile.displayName}
+            </span>
+            {syncStatus.pendingCount > 0 && activeProfile.mode === 'cloud' && (
+              <span className="hidden rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 sm:inline dark:text-amber-300">
+                {syncStatus.pendingCount}
+              </span>
+            )}
           </button>
 
-          {launcherOpen && (
-            <div
-              role="dialog"
-              aria-label="Sub-App Launcher preview"
-              className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl [@media(orientation:landscape)_and_(max-height:500px)]:max-h-[calc(100dvh-4.5rem)] dark:border-slate-800 dark:bg-slate-900"
+          {/* 9-Dot App Launcher */}
+          <div ref={launcherRef} className="relative">
+            <button
+              type="button"
+              onClick={toggleLauncher}
+              aria-label="Open app launcher"
+              aria-expanded={launcherOpen}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 active:scale-95 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
-                    <Sparkles className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
-                    Sub-Apps Launcher
-                  </h2>
+              <Grip className="h-5 w-5" aria-hidden="true" />
+              <kbd className="hidden rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 sm:inline-block dark:bg-slate-800 dark:text-slate-400">
+                ⌘K
+              </kbd>
+            </button>
+
+            {launcherOpen && (
+              <div
+                role="dialog"
+                aria-label="Sub-App Launcher preview"
+                className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 shadow-xl [@media(orientation:landscape)_and_(max-height:500px)]:max-h-[calc(100dvh-4.5rem)] dark:border-slate-800 dark:bg-slate-900"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400">
+                      <Sparkles className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                      Sub-Apps Launcher
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLauncherOpen(false)}
+                    aria-label="Close app launcher"
+                    className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  >
+                    <X className="h-4 w-4" aria-hidden="true" />
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setLauncherOpen(false)}
-                  aria-label="Close app launcher"
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
+                <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                  Modular sub-apps like Ambient Focus Audio and JSON Backup/Sync
+                  will open here in Phase 6 on top of your active tab without
+                  interrupting a running timer.
+                </p>
               </div>
-              <p className="mt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                Modular sub-apps like Ambient Focus Audio and JSON Backup/Sync
-                will open here in Phase 6 on top of your active tab without
-                interrupting a running timer.
-              </p>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </header>
+    <AccountSyncModal
+      isOpen={accountModalOpen}
+      onClose={() => setAccountModalOpen(false)}
+    />
+    </>
   );
 }

@@ -4,9 +4,11 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useAppStore } from '../../../store/useAppStore';
+import { syncEngine } from '../../../sync/syncEngine';
 import { getLogicalStudyDate } from '../../../utils/date';
 import { AppHeader } from '../AppHeader';
 
@@ -14,13 +16,16 @@ describe('AppHeader — Interactive 3-Ring Header & SVG Geometry', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 10, 26, 14, 0, 0));
+    syncEngine.resetInternalStateForTests();
     localStorage.clear();
     useAppStore.getState().resetAllData();
   });
 
   afterEach(() => {
+    syncEngine.resetInternalStateForTests();
     cleanup();
     vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('renders 0% rings and 0/100 score initially under the zero-item rule', () => {
@@ -135,5 +140,83 @@ describe('AppHeader — Interactive 3-Ring Header & SVG Geometry', () => {
     fireEvent.pointerUp(summaryButton, { pointerType: 'touch' });
     fireEvent.click(summaryButton);
     expect(summaryButton).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('opens AccountSyncModal, registers a cloud account with optional local data copy, and runs Sync Now', async () => {
+    vi.useRealTimers();
+    useAppStore.getState().addSubject({
+      name: 'Local Subject',
+      color: '#10b981',
+      dailyGoalMinutes: 60,
+    });
+
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url === '/api/auth/register') {
+        return new Response(
+          JSON.stringify({
+            user: {
+              id: 'usr_alice',
+              username: 'alice',
+              displayName: 'Alice',
+              createdAt: 1000,
+              serverRevision: 0,
+            },
+          }),
+          { status: 201 },
+        );
+      }
+      if (url === '/api/sync') {
+        return new Response(
+          JSON.stringify({
+            serverRevision: 1,
+            serverTime: 2000,
+            acceptedCount: 1,
+            entities: [],
+          }),
+          { status: 200 },
+        );
+      }
+      if (url.startsWith('/api/sync/meta')) {
+        return new Response(null, { status: 304 });
+      }
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    });
+
+    render(<AppHeader />);
+    fireEvent.click(screen.getByTestId('account-sync-pill'));
+    expect(
+      screen.getByRole('dialog', { name: 'Accounts and cloud sync' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Register Cloud' }));
+    fireEvent.change(screen.getByLabelText('Username'), {
+      target: { value: 'alice' },
+    });
+    fireEvent.change(screen.getByLabelText('Display Name (optional)'), {
+      target: { value: 'Alice' },
+    });
+    fireEvent.change(screen.getByLabelText('Password'), {
+      target: { value: 'password123' },
+    });
+
+    const copyCheckbox = screen.getByRole('checkbox');
+    fireEvent.click(copyCheckbox);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Register & Enable Sync' }),
+    );
+
+    await waitFor(() => {
+      expect(useAppStore.getState().activeUserId).toBe('usr_alice');
+    });
+    expect(useAppStore.getState().subjects.map((s) => s.name)).toEqual([
+      'Local Subject',
+    ]);
+    expect(screen.getByRole('button', { name: 'Sync Now' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/register',
+      expect.anything(),
+    );
   });
 });

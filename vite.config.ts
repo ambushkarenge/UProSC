@@ -4,12 +4,29 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: process.env.VITE_WORKER_PROXY_TARGET ?? 'http://127.0.0.1:8787',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg', 'icons/apple-touch-icon.png'],
+      workbox: {
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            urlPattern: /^\/api\//,
+            handler: 'NetworkOnly',
+          },
+        ],
+      },
       manifest: {
         name: 'UProSC — Study & Productivity Rings',
         short_name: 'UProSC',

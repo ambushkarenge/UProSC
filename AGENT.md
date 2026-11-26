@@ -44,12 +44,17 @@ The user is learning web development simultaneously while building UProSC. Follo
    - Full-Screen Mode uses the Screen Wake Lock API (`navigator.wakeLock`) with `visibilitychange` re-acquisition and a CSS `inset-0` full-screen fallback (for iPhone Safari).
 6. **Visual Theme:**
    - **System-adaptive** (light & dark matching OS preference from Day 1, respecting `env(safe-area-inset-*)` for mobile notches/home indicators).
+7. **Multi-User Isolation & Low-Traffic Sync:**
+   - All persisted data (`uprosc-app-state:${userId}`, `uprosc:active-timer-mirror:${userId}`, subjects, sessions, tasks, multi-day plans, habits, D-Day, settings) MUST be strictly isolated per `userId` — switching users must never leak data.
+   - Persist locally first (IndexedDB + `localStorage` active-timer mirror + `pagehide`/`visibilitychange` flush) and keep the active user signed in across browser/tab closes so zero data is lost.
+   - Sync across devices via **lightweight periodic sync + user-forced "Sync Now"** without excessive traffic: never sync on every timer second or UI tap; use dirty flags, revision/ETag checks (zero payload when unchanged), visibility-gated periodic intervals, and per-entity `updatedAt` / `deletedAt` tombstone deltas.
+   - Account switcher & Sync status pill live in the persistent header/popover/modal — never add extra navigation tabs.
 
 ---
 
 ## 4. Environment, Git & Deployment Guardrails
 - **Node/npm `PATH`:** Node (`v26.12.0`) and npm (`11.20.0`) are installed via Homebrew at `/opt/homebrew/bin`, which is not on default non-interactive sandbox `PATH`. Always prefix shell commands with `export PATH="/opt/homebrew/bin:$PATH"`.
-- **Hosting Target:** **GitHub + Cloudflare Pages** (chosen for unlimited free static bandwidth and easy Git auto-deploys; Service Worker + IndexedDB make the app run 100% offline once cached).
+- **Hosting & Sync Backend Target:** **GitHub + Cloudflare Workers (Static Assets + Worker API `/api/*` + Cloudflare D1 SQLite)** — Option 1 confirmed for Phase 3B sync and Day-1 hosting (unlimited static assets + 100k Worker req/day + 5M D1 reads/day free, never sleeps, same-origin; Service Worker + IndexedDB make the app run 100% offline once cached).
 - **Git Remote & Account Guardrail:** Do **NOT** reconfigure `origin` or modify GitHub/Cloudflare account settings automatically. Follow the **End-of-Phase Checklist** above (`commit` locally and `git push origin main`, prompting once for sandbox network approval unless the user runs it themselves).
 - **Verification & Cross-Platform Testing Discipline:**
   - Run `npx tsc --noEmit`, `npx vitest run`, and `npm run build` after changes and never mark a phase done with failing checks.

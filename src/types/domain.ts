@@ -2,7 +2,48 @@ export type LogicalDate = string; // "YYYY-MM-DD" anchored to the 5:00 AM local 
 
 export type TaskPriority = 'low' | 'medium' | 'high';
 
-export interface Subject {
+export type SyncEntityType =
+  | 'settings'
+  | 'subject'
+  | 'session'
+  | 'task'
+  | 'multiDayPlan'
+  | 'habit'
+  | 'dday'
+  | 'activeTimer';
+
+export interface SyncableRecord {
+  updatedAt?: number; // epoch ms for per-entity last-write-wins merge
+  deletedAt?: number; // tombstone epoch ms so cross-device deletes propagate cleanly
+}
+
+export type UserAuthMode = 'local' | 'cloud';
+export type CloudAuthState = 'none' | 'authenticated' | 'reauth_required';
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  displayName: string;
+  mode: UserAuthMode;
+  authState: CloudAuthState;
+  createdAt: number;
+  lastSyncedAt: number | null;
+  serverRevision: number;
+}
+
+export interface DirtyEntityRef {
+  entityType: SyncEntityType;
+  entityId: string;
+  updatedAt: number;
+}
+
+export interface SyncTombstone {
+  entityType: SyncEntityType;
+  entityId: string;
+  deletedAt: number;
+}
+
+export interface Subject extends SyncableRecord {
   id: string;
   name: string;
   color: string;
@@ -11,7 +52,7 @@ export interface Subject {
   createdAt: number;
 }
 
-export interface StudySession {
+export interface StudySession extends SyncableRecord {
   id: string;
   subjectId: string;
   startTime: number; // epoch ms
@@ -20,7 +61,7 @@ export interface StudySession {
   logicalDate: LogicalDate;
 }
 
-export interface TodoTask {
+export interface TodoTask extends SyncableRecord {
   id: string;
   title: string;
   logicalDate: LogicalDate;
@@ -34,7 +75,7 @@ export interface TodoTask {
   scheduledTime?: string; // "HH:mm" optional for .ics export
 }
 
-export interface MultiDayTaskPlan {
+export interface MultiDayTaskPlan extends SyncableRecord {
   id: string;
   title: string;
   startDate: LogicalDate;
@@ -45,7 +86,7 @@ export interface MultiDayTaskPlan {
   priority: TaskPriority;
 }
 
-export interface Habit {
+export interface Habit extends SyncableRecord {
   id: string;
   name: string;
   icon: string;
@@ -53,13 +94,20 @@ export interface Habit {
   archived: boolean;
   createdAt: number;
   completedDates: Record<LogicalDate, boolean>;
+  completedDateUpdatedAt?: Record<LogicalDate, number>;
 }
 
-export interface DDayGoal {
+export interface DDayGoal extends SyncableRecord {
   id: string;
   title: string;
   targetDate: LogicalDate;
   targetStudyHours: number;
+}
+
+export interface UserSettingsData extends SyncableRecord {
+  id: 'settings';
+  dailyStudyGoalMinutes: number;
+  soundEnabled: boolean;
 }
 
 export type TimerMode = 'stopwatch' | 'countdown';

@@ -4,10 +4,13 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
+import { DEFAULT_LOCAL_USER_ID } from '../store/idbStorage';
 import { useAppStore } from '../store/useAppStore';
+import { syncEngine } from '../sync/syncEngine';
 import { getLogicalStudyDate } from '../utils/date';
 
 interface PlatformProfile {
@@ -189,11 +192,13 @@ function applyEnvironment(
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date(2026, 10, 26, 14, 0, 0));
+  syncEngine.resetInternalStateForTests();
   localStorage.clear();
   useAppStore.getState().resetAllData();
 });
 
 afterEach(() => {
+  syncEngine.resetInternalStateForTests();
   cleanup();
   vi.useRealTimers();
   Object.defineProperty(window, 'innerWidth', {
@@ -225,7 +230,7 @@ afterEach(() => {
 
 describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
   describe.each(PLATFORM_PROFILES)('$name ($width x $height)', (profile) => {
-    it('renders strict 3-tab shell, safe-area guards, and landscape compact rules in light & dark themes', () => {
+    it('renders strict 3-tab shell, safe-area guards, and landscape compact rules in light & dark themes', async () => {
       for (const scheme of ['light', 'dark'] as const) {
         useAppStore.getState().resetAllData();
         applyEnvironment(profile, scheme);
@@ -391,6 +396,44 @@ describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
 
         fireEvent.keyDown(window, { key: 'Escape' });
         expect(ringsButton).toHaveAttribute('aria-expanded', 'false');
+
+        // Phase 3B: Header Account/Sync Pill, viewport-bounded modal & isolated user switching
+        vi.useRealTimers();
+        const accountButton = screen.getByTestId('account-sync-pill');
+        expect(accountButton).toBeInTheDocument();
+        fireEvent.click(accountButton);
+
+        const accountDialog = screen.getByRole('dialog', {
+          name: 'Accounts and cloud sync',
+        });
+        expect(accountDialog.className).toContain('max-h-[calc(100dvh-2rem)]');
+        expect(accountDialog.className).toContain('overflow-y-auto');
+
+        fireEvent.change(screen.getByLabelText('Local Profile Name'), {
+          target: { value: 'Study Buddy' },
+        });
+        fireEvent.click(
+          screen.getByRole('button', { name: 'Create Isolated Local Profile' }),
+        );
+        await waitFor(() => {
+          expect(useAppStore.getState().activeUserId).not.toBe(
+            DEFAULT_LOCAL_USER_ID,
+          );
+        });
+        // New user profile starts clean without leaking User 1's tasks or sessions
+        expect(useAppStore.getState().sessions).toHaveLength(0);
+        expect(useAppStore.getState().tasks).toHaveLength(0);
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(
+          screen.queryByRole('dialog', { name: 'Accounts and cloud sync' }),
+        ).not.toBeInTheDocument();
+
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 10, 26, 14, 0, 0));
+        localStorage.clear();
+        syncEngine.resetInternalStateForTests();
+        useAppStore.getState().resetAllData();
 
         unmount();
       }

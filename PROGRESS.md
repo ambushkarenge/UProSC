@@ -1,7 +1,7 @@
 # PROGRESS.md — UProSC Live Status & Memory Log
 
-**Current Status:** **Phase 3 Complete — Paused before Phase 4** (awaiting user's explicit go-ahead for Phase 4).  
-**Last Updated:** 2026-11-26
+**Current Status:** **Phase 3B Complete — Paused before Phase 4** (awaiting user's explicit go-ahead to start Phase 4; run Cloudflare D1 provisioning before pushing `wrangler.jsonc` to live auto-deploy).  
+**Last Updated:** 2026-11-27
 
 ---
 
@@ -37,12 +37,22 @@
   - `src/features/timer/`: `TimerTab.tsx`, `FullScreenClock.tsx`, `SubjectManager.tsx`, `DDayTracker.tsx`, `BehavioralCompanion.tsx`, `FocusAnalytics.tsx`, `subjectColors.ts`
   - Wired `TimerTab` into `src/App.tsx` and immediate clock sync on status change in `src/components/Header/AppHeader.tsx`
   - Tests added/updated: `src/utils/__tests__/focusAnalytics.test.ts`, `src/utils/__tests__/behavioral.test.ts`, `src/utils/__tests__/score.test.ts`, `src/store/__tests__/useAppStore.test.ts`, `src/hooks/__tests__/useWakeLock.test.ts`, `src/hooks/__tests__/useTimestampTimer.test.ts`, `src/features/timer/__tests__/TimerTab.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
+- **Phase 3B Implemented Files & Features:**
+  - `wrangler.jsonc` (Cloudflare Worker + Static Assets `./dist` + `run_worker_first: ["/api/*"]` + D1 binding `DB`) and `migrations/0001_multi_user_sync.sql` (`users`, `auth_sessions`, `user_revisions`, `sync_entities`)
+  - `worker/types.ts`, `worker/auth.ts` (PBKDF2-SHA256 100k iterations, SHA-256 session tokens, HttpOnly `uprosc_session` cookies, `/api/auth/*`), `worker/sync.ts` (`/api/sync/meta` with `ETag`/`304`, `/api/sync` push/pull + `X-UProSC-User-Id` mismatch guard), `worker/index.ts`
+  - Extended `src/types/domain.ts` (`UserProfile`, `SyncableRecord`, `SyncEntityType`, `SyncTombstone`, `DirtyEntityRef`, `UserSettingsData`, `Habit.completedDateUpdatedAt`) and `src/sync/types.ts`
+  - `src/store/idbStorage.ts` (user-scoped `uprosc-app-state:${userId}`, `uprosc:active-timer-mirror:${userId}`, `uprosc:state-mirror:${userId}` safety snapshot, legacy key helpers)
+  - `src/store/accountManager.ts` (multi-user profile registry + synchronous mirror + one-time Phase 1–3 legacy data migration)
+  - `src/store/useAppStore.ts` (per-user storage adapter, `updatedAt`/`deletedAt` tombstones, dirty entity tracking, safe `switchActiveUserStore`, `flushCurrentUserSnapshotSync`, explicit optional local-to-cloud migration)
+  - `src/sync/merge.ts` (shared client/server LWW, tombstones, and per-date habit `completedDateUpdatedAt` merging), `src/sync/apiClient.ts`, `src/sync/syncEngine.ts` (visibility-gated 60s poll, 3s manual `Sync Now` cooldown, `pagehide` + `keepalive` exit flush, `useSyncStatus` hook)
+  - `src/components/Header/AccountSyncModal.tsx`, updated `src/components/Header/AppHeader.tsx` (compact User/Sync pill beside 9-dot launcher), `src/App.tsx` (lifecycle init/teardown), `src/hooks/useTimestampTimer.ts` (`activeUserId` switch cleanup + `pagehide` flush), `vite.config.ts` (`/api` proxy + Workbox `navigateFallbackDenylist`), `tsconfig.json` (`worker` included)
+  - Tests added/updated: `src/sync/__tests__/merge.test.ts`, `src/sync/__tests__/syncEngine.test.ts`, `worker/__tests__/syncWorker.test.ts`, `src/store/__tests__/useAppStore.test.ts`, `src/components/Header/__tests__/AppHeader.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
 - **Removed:** Leftover `.next/` directory deleted and Next.js `.gitignore` replaced.
-- **Verified Local Toolchain & Phase 3 Checks:**
+- **Verified Local Toolchain & Phase 3B Checks:**
   - Node.js `v26.12.0` (`/opt/homebrew/bin/node`), npm `11.20.0`, Git `2.54.0`
-  - `npx tsc --noEmit` passing
-  - `npx vitest run` passing (`48` tests across `11` test files, verified across `America/New_York`, `UTC`, `Asia/Kolkata` and `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape profiles in light/dark themes)
-  - `npm run build` passing (generates `dist/manifest.webmanifest`, `dist/sw.js` with 10 precache entries, and `dist/registerSW.js`)
+  - `npx tsc --noEmit` passing (including `src` and `worker`)
+  - `npx vitest run` passing (`62` tests across `14` test files, verified across `America/New_York`, `UTC`, `Asia/Kolkata` and `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape profiles in light/dark themes)
+  - `npm run build` passing (generates `dist/manifest.webmanifest`, `dist/sw.js` with `/api/` excluded from navigation fallback, and `dist/registerSW.js`)
 
 ---
 
@@ -71,24 +81,33 @@
   - [x] Daily timeline, subject donut, peak hours SVG analytics
   - [x] Duolingo-inspired positive celebrations & pace/streak-at-risk companion
   - [x] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
+- [x] **Phase 3B (Immediate Priority Before Phase 4): Multi-User Profiles, Isolated Persistence & Low-Traffic Cross-Device Sync**
+  - [x] User profile registry & per-user namespaced IndexedDB + `localStorage` active-timer mirror (zero leakage across users + legacy data migration)
+  - [x] Persistent login/active-user session + `pagehide` / `visibilitychange` flush (zero data loss when closing webpage)
+  - [x] Low-traffic delta sync engine (`updatedAt` + `deletedAt` tombstones, compact revision/ETag check, visibility-gated periodic sync, forced **Sync Now** with cooldown)
+  - [x] Cloud sync backend & auth endpoints (**Option 1 Confirmed:** Cloudflare Worker `/api/auth/*` + `/api/sync/*` + Cloudflare D1 SQLite + `wrangler.jsonc` + D1 migrations)
+  - [x] Header Account Switcher + compact Sync Status/Force-Sync controls (preserving strict 3-tab layout)
+  - [x] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android) + multi-user isolation & merge unit tests
 - [ ] **Phase 4: To-Do List, Multi-Day Auto-Split & Calendar / `.ics` Integration (Tab 2)**
-  - [ ] Today's Tasks (5:00 AM boundary) + priority tags + Ring 2 sync
+  - [ ] Today's Tasks (5:00 AM boundary) + priority tags + Ring 2 sync (scoped per user & syncable)
   - [ ] One-Time & Multi-Day tasks with *"Split Evenly Across Days"* + unit tests
   - [ ] Collapsible Monthly & Weekly Calendar view with task loads, spans, deadlines & D-Day
   - [ ] One-click RFC 5545 `.ics` export + unit tests
+  - [ ] Per-entity `updatedAt` / `deletedAt` delta-sync wiring for tasks & multi-day plans
   - [ ] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
 - [ ] **Phase 5: Daily Habits, Streak Engine & 5-Step Consistency Heatmap (Tab 3)**
-  - [ ] Daily habits checklist (custom icons/colors, edit/archive) + Ring 3 sync
+  - [ ] Daily habits checklist (custom icons/colors, edit/archive) + Ring 3 sync (scoped per user & syncable)
   - [ ] Current Streak & Best Streak engine (5:00 AM aware) + unit tests
   - [ ] 5-step (`0%` to `100%`) GitHub/HabitKit consistency heatmap
+  - [ ] Per-date habit check-in merge timestamps (`completedDateUpdatedAt`) for conflict-free multi-device sync
   - [ ] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
 - [ ] **Phase 6: Modular Sub-Apps Architecture, Landscape Optimization & Full PWA Audit**
   - [ ] `src/subapps/registry.ts` plugin contract & 9-dot / `Cmd+K` launcher
   - [ ] Slide-over drawer (desktop) / full-height bottom sheet (mobile) keeping timer uninterrupted
-  - [ ] Starter sub-apps (Ambient Focus Audio, JSON Backup/Restore)
-  - [ ] **Landscape Optimization** (compact short-viewport header/nav, left/right safe areas, two-column landscape layouts across tabs & full-screen clock)
+  - [ ] Starter sub-apps (Ambient Focus Audio, User-Scoped JSON Backup/Restore + Sync Diagnostics)
+  - [ ] **Landscape Optimization** (compact short-viewport header/nav + user/sync controls, left/right safe areas, two-column landscape layouts across tabs & full-screen clock)
   - [ ] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
-  - [ ] Offline airplane-mode, mobile PWA & Lighthouse verification
+  - [ ] Offline airplane-mode, multi-user isolation, 2-device sync, mobile PWA & Lighthouse verification
 
 ---
 
@@ -110,8 +129,11 @@
 - **2026-11-26 — Phase 2 Implemented & Verified:** Installed `zustand` and `idb-keyval`; built `src/types/domain.ts`, 5:00 AM local logical-date & boundary-splitting engine (`src/utils/date.ts`), `45/35/20` Productivity Score + zero-item ring engine (`src/utils/score.ts`), offline IndexedDB + `localStorage` active-timer mirror store (`src/store/idbStorage.ts`, `src/store/useAppStore.ts`), and interactive SVG 3-Ring Header + hover/click/touch-hold breakdown popover with daily goal controls (`src/components/Header/ActivityRing.tsx`, `src/components/Header/AppHeader.tsx`). Verified `tsc --noEmit`, `vitest run` (`30` tests across `6` files and 3 timezones), and `npm run build`.
 - **2026-11-26 — Phase 2 Wrap-Up & CI Setup:** Added `.github/workflows/ci.yml` and updated `AGENT.md` with the End-of-Phase `commit` + `git push origin main` checklist before Phase 3.
 - **2026-11-26 — Phase 3 Implemented & Verified:** Built Tab 1 (`TimerTab`, `FullScreenClock`, `SubjectManager`, `DDayTracker`, `BehavioralCompanion`, `FocusAnalytics`), timestamp-delta timer hook (`useTimestampTimer`), Screen Wake Lock hook (`useWakeLock`), Web Audio chimes (`sound.ts`), analytics/streak engines (`focusAnalytics.ts`, `behavioral.ts`), and 18 new unit/feature/cross-platform tests (`48` tests passing across `11` files).
+- **2026-11-27 — Scope Update (Multi-User Isolation & Low-Traffic Sync Added as Immediate Priority):** Added **Phase 3B** (before Phase 4) in `AGENT.md`, `PLAN.md`, and `PROGRESS.md`, and propagated user-scoped persistence + delta-sync metadata across Phases 4–6 (`TodoTask`, `MultiDayTaskPlan`, `Habit` per-date merge, user-scoped backup/sync sub-app, and landscape header polish).
+- **2026-11-27 — Sync Backend Confirmed (Option 1):** User selected **Option 1: Cloudflare Worker API (`/api/auth/*`, `/api/sync/*`) + Cloudflare D1 (SQLite)** in `PLAN.md` and `PROGRESS.md`; paused with zero project code edits pending explicit user command to start Phase 3B.
+- **2026-11-27 — Phase 3B Implemented & Verified:** Built Cloudflare Worker API + D1 migration (`wrangler.jsonc`, `migrations/0001_multi_user_sync.sql`, `worker/*`), user-scoped IndexedDB + `localStorage` mirror persistence & legacy migration (`accountManager.ts`, `idbStorage.ts`, `useAppStore.ts`), low-traffic CRDT/LWW delta sync (`src/sync/*`), `AccountSyncModal` + header sync pill (`AppHeader.tsx`), Workbox `/api/` exclusion (`vite.config.ts`), and 14 new unit/worker/UI/cross-platform tests (`62` tests passing across `14` files).
 
 ---
 
 ## 4. Next Immediate Step
-Explain Phase 3 completion and what Phase 4 will implement, then wait for the user's explicit go-ahead for **Phase 4** (`To-Do List, Multi-Day Auto-Split & Calendar / .ics Integration` in Tab 2: Today's Tasks anchored to 5:00 AM, priority tags feeding Ring 2, Multi-Day *"Split Evenly Across Days"* planner, collapsible Monthly/Weekly Calendar view with D-Day markers, RFC 5545 `.ics` export, and cross-platform Portrait & Landscape tests).
+Before pushing `main` for Cloudflare auto-deployment, create and link your D1 database (`npx wrangler d1 create uprosc-db`, update `database_id` in `wrangler.jsonc`, and run `npx wrangler d1 migrations apply uprosc-db --remote`). Next roadmap phase: wait for the user's explicit go-ahead to start **Phase 4** (`To-Do List, Multi-Day Auto-Split & Calendar / .ics Integration` in Tab 2).

@@ -19,5 +19,5 @@
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "@testing-library/jest-dom/vitest"]
   },
-  "include": ["src"]
+  "include": ["src", "worker"]
 }

@@ -1,7 +1,11 @@
-import { useState, type ComponentType } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { CheckSquare, Flame, Timer } from 'lucide-react';
 import { AppHeader } from './components/Header/AppHeader';
 import { TimerTab } from './features/timer/TimerTab';
+import {
+  initializeAppPersistence,
+  teardownAppPersistence,
+} from './sync/syncEngine';
 
 export type CoreTabId = 'timer' | 'todo' | 'habits';
 
@@ -78,6 +82,13 @@ export function App() {
   const [activeTab, setActiveTab] = useState<CoreTabId>('timer');
   const currentTab =
     CORE_TABS.find((tab) => tab.id === activeTab) ?? CORE_TABS[0];
+
+  useEffect(() => {
+    void initializeAppPersistence();
+    return () => {
+      teardownAppPersistence();
+    };
+  }, []);
 
   return (
     <div className="flex min-h-dvh flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">

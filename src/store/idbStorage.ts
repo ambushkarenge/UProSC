@@ -2,7 +2,10 @@ import { del, get, set } from 'idb-keyval';
 import type { StateStorage } from 'zustand/middleware';
 import type { ActiveTimerState } from '../types/domain';
 
+export const DEFAULT_LOCAL_USER_ID = 'local-default';
+export const STORE_STORAGE_KEY = 'uprosc-app-state';
 export const ACTIVE_TIMER_MIRROR_KEY = 'uprosc:active-timer-mirror';
+export const STATE_SNAPSHOT_MIRROR_KEY = 'uprosc:state-mirror';
 
 const memoryFallbackStore = new Map<string, string>();
 
@@ -10,7 +13,7 @@ function canUseIndexedDB(): boolean {
   return typeof indexedDB !== 'undefined';
 }
 
-function safeLocalStorageGet(key: string): string | null {
+export function safeLocalStorageGet(key: string): string | null {
   try {
     if (typeof localStorage !== 'undefined') {
       return localStorage.getItem(key);
@@ -21,7 +24,7 @@ function safeLocalStorageGet(key: string): string | null {
   return memoryFallbackStore.get(key) ?? null;
 }
 
-function safeLocalStorageSet(key: string, value: string): void {
+export function safeLocalStorageSet(key: string, value: string): void {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(key, value);
@@ -33,7 +36,7 @@ function safeLocalStorageSet(key: string, value: string): void {
   memoryFallbackStore.set(key, value);
 }
 
-function safeLocalStorageRemove(key: string): void {
+export function safeLocalStorageRemove(key: string): void {
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem(key);
@@ -42,6 +45,22 @@ function safeLocalStorageRemove(key: string): void {
     // Ignore
   }
   memoryFallbackStore.delete(key);
+}
+
+export function getUserStoreStorageKey(userId: string): string {
+  return `${STORE_STORAGE_KEY}:${userId || DEFAULT_LOCAL_USER_ID}`;
+}
+
+export function getActiveTimerMirrorKey(
+  userId: string = DEFAULT_LOCAL_USER_ID,
+): string {
+  return `${ACTIVE_TIMER_MIRROR_KEY}:${userId || DEFAULT_LOCAL_USER_ID}`;
+}
+
+export function getStateSnapshotMirrorKey(
+  userId: string = DEFAULT_LOCAL_USER_ID,
+): string {
+  return `${STATE_SNAPSHOT_MIRROR_KEY}:${userId || DEFAULT_LOCAL_USER_ID}`;
 }
 
 /**
@@ -94,20 +113,19 @@ export interface ActiveTimerMirrorPayload {
 }
 
 /**
- * Synchronously mirrors the active timer state to `localStorage` so sudden
- * tab closes or iOS PWA terminations never lose an active running session.
+ * Synchronously mirrors the active timer state per `userId` to `localStorage`
+ * so sudden tab closes or iOS PWA terminations never lose a running session.
  */
 export function saveActiveTimerMirror(
   timer: ActiveTimerState,
   updatedAt = Date.now(),
+  userId: string = DEFAULT_LOCAL_USER_ID,
 ): void {
   const payload: ActiveTimerMirrorPayload = { timer, updatedAt };
-  safeLocalStorageSet(ACTIVE_TIMER_MIRROR_KEY, JSON.stringify(payload));
+  safeLocalStorageSet(getActiveTimerMirrorKey(userId), JSON.stringify(payload));
 }
 
-/** Reads the synchronous `localStorage` mirror of the active timer if valid. */
-export function readActiveTimerMirror(): ActiveTimerMirrorPayload | null {
-  const raw = safeLocalStorageGet(ACTIVE_TIMER_MIRROR_KEY);
+function parseTimerMirrorRaw(raw: string | null): ActiveTimerMirrorPayload | null {
   if (!raw) return null;
 
   try {
@@ -129,7 +147,41 @@ export function readActiveTimerMirror(): ActiveTimerMirrorPayload | null {
   return null;
 }
 
-/** Clears the synchronous `localStorage` active timer mirror. */
-export function clearActiveTimerMirror(): void {
+/** Reads the synchronous `localStorage` mirror of the active timer for a user. */
+export function readActiveTimerMirror(
+  userId: string = DEFAULT_LOCAL_USER_ID,
+): ActiveTimerMirrorPayload | null {
+  return parseTimerMirrorRaw(safeLocalStorageGet(getActiveTimerMirrorKey(userId)));
+}
+
+/** Reads the legacy Phase 1-3 unscoped active timer mirror if present. */
+export function readLegacyActiveTimerMirror(): ActiveTimerMirrorPayload | null {
+  return parseTimerMirrorRaw(safeLocalStorageGet(ACTIVE_TIMER_MIRROR_KEY));
+}
+
+/** Clears the synchronous `localStorage` active timer mirror for a user. */
+export function clearActiveTimerMirror(
+  userId: string = DEFAULT_LOCAL_USER_ID,
+): void {
+  safeLocalStorageRemove(getActiveTimerMirrorKey(userId));
+}
+
+export function clearLegacyActiveTimerMirror(): void {
   safeLocalStorageRemove(ACTIVE_TIMER_MIRROR_KEY);
+}
+
+/**
+ * Synchronous safety mirror for full user state flushed on `pagehide` / `visibilitychange`
+ * so closing a webpage never loses changes even if async IndexedDB writes haven't settled.
+ */
+export function saveStateSnapshotMirror(userId: string, serializedEnvelope: string): void {
+  safeLocalStorageSet(getStateSnapshotMirrorKey(userId), serializedEnvelope);
+}
+
+export function readStateSnapshotMirror(userId: string): string | null {
+  return safeLocalStorageGet(getStateSnapshotMirrorKey(userId));
+}
+
+export function clearStateSnapshotMirror(userId: string): void {
+  safeLocalStorageRemove(getStateSnapshotMirrorKey(userId));
 }

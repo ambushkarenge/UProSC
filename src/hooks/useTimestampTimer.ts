@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { saveActiveTimerMirror } from '../store/idbStorage';
 import {
   DEFAULT_COUNTDOWN_DURATION_MS,
   useAppStore,
@@ -71,7 +72,9 @@ function computeCappedSegmentEnd(
  * Pomodoro/custom blocks persisted across reloads in IndexedDB + localStorage mirror.
  */
 export function useTimestampTimer() {
+  const activeUserId = useAppStore((state) => state.activeUserId);
   const activeTimer = useAppStore((state) => state.activeTimer);
+  const activeTimerUpdatedAt = useAppStore((state) => state.activeTimerUpdatedAt);
   const setActiveTimer = useAppStore((state) => state.setActiveTimer);
   const logStudySession = useAppStore((state) => state.logStudySession);
   const soundEnabled = useAppStore((state) => state.soundEnabled);
@@ -84,6 +87,31 @@ export function useTimestampTimer() {
   const [completionNotice, setCompletionNotice] =
     useState<TimerCompletionNotice | null>(null);
   const autoCompletedSessionRef = useRef<number | null>(null);
+
+  // Clear transient completion alerts & reset auto-complete tracking when switching users
+  useEffect(() => {
+    autoCompletedSessionRef.current = null;
+    setCompletionNotice(null);
+    setNowMs(Date.now());
+  }, [activeUserId]);
+
+  // Synchronously flush active timer mirror on pagehide/hidden so closing tabs never loses a session
+  useEffect(() => {
+    const flushTimerMirror = () => {
+      saveActiveTimerMirror(activeTimer, activeTimerUpdatedAt, activeUserId);
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        flushTimerMirror();
+      }
+    };
+    window.addEventListener('pagehide', flushTimerMirror);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('pagehide', flushTimerMirror);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [activeTimer, activeTimerUpdatedAt, activeUserId]);
 
   useEffect(() => {
     setNowMs(Date.now());
