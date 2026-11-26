@@ -1,6 +1,14 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
+import { useAppStore } from '../store/useAppStore';
+import { getLogicalStudyDate } from '../utils/date';
 
 interface PlatformProfile {
   name: string;
@@ -178,8 +186,16 @@ function applyEnvironment(
     }) as MediaQueryList;
 }
 
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date(2026, 10, 26, 14, 0, 0));
+  localStorage.clear();
+  useAppStore.getState().resetAllData();
+});
+
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   Object.defineProperty(window, 'innerWidth', {
     configurable: true,
     writable: true,
@@ -278,6 +294,53 @@ describe('Cross-Platform Portrait & Landscape Layout Matrix', () => {
           name: 'Sub-App Launcher preview',
         });
         expect(dialog.className).toContain('max-w-[calc(100vw-2rem)]');
+        expect(dialog.className).toContain('max-h-[calc(100dvh-4.5rem)]');
+
+        // Phase 2: Interactive 3-Ring Header live updates & breakdown popover across portrait & landscape
+        const ringsButton = screen.getByRole('button', {
+          name: 'Daily activity rings summary',
+        });
+        expect(
+          screen.getByTestId('productivity-score-value'),
+        ).toHaveTextContent('0');
+
+        act(() => {
+          useAppStore.getState().resetAllData();
+          const today = getLogicalStudyDate(Date.now());
+          const now = Date.now();
+          useAppStore
+            .getState()
+            .logStudySession('focus-test', now - 60 * 60 * 1000, now);
+          const task = useAppStore.getState().addTask({
+            title: 'Cross-platform task',
+            logicalDate: today,
+            priority: 'high',
+          });
+          useAppStore.getState().toggleTask(task.id);
+        });
+
+        // 50% Focus (22.5) + 100% To-Do (35) + 0% Habits (0) = 58
+        expect(
+          screen.getByTestId('productivity-score-value'),
+        ).toHaveTextContent('58');
+
+        fireEvent.click(ringsButton);
+        const ringsDialog = screen.getByRole('dialog', {
+          name: 'Daily activity rings breakdown',
+        });
+        expect(ringsDialog.className).toContain('max-w-[calc(100vw-2rem)]');
+        expect(ringsDialog.className).toContain('max-h-[calc(100dvh-4.5rem)]');
+        expect(ringsDialog.className).toContain('overflow-y-auto');
+
+        // Updating goal inside popover recalculates score live
+        fireEvent.click(screen.getByRole('button', { name: '1h' }));
+        // 100% Focus (45) + 100% To-Do (35) = 80
+        expect(
+          screen.getByTestId('productivity-score-value'),
+        ).toHaveTextContent('80');
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(ringsButton).toHaveAttribute('aria-expanded', 'false');
 
         unmount();
       }

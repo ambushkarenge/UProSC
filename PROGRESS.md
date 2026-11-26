@@ -1,6 +1,6 @@
 # PROGRESS.md — UProSC Live Status & Memory Log
 
-**Current Status:** **Phase 1 Complete & Live — Paused before Phase 2** (deployed at `https://uprosc.ambush-darth.workers.dev`; awaiting user's explicit go-ahead for Phase 2).  
+**Current Status:** **Phase 2 Complete — Paused before Phase 3** (awaiting user's explicit go-ahead for Phase 3).  
 **Last Updated:** 2026-11-26
 
 ---
@@ -9,18 +9,28 @@
 - **Workspace Path:** `/Users/varuntejbhukya/Documents/UProSC`
 - **Git & Live Hosting:**
   - GitHub Remote (`origin`): `https://github.com/ambushkarenge/UProSC.git` (`main`)
-  - Live Cloudflare Deployment: `https://uprosc.ambush-darth.workers.dev` (verified HTTP 200 for `/`, `/manifest.webmanifest`, `/sw.js`, and bundle assets)
+  - Live Cloudflare Deployment: `https://uprosc.ambush-darth.workers.dev` (Phase 1 live; Phase 2 ready locally for commit/push when user chooses)
 - **Phase 1 Implemented Files:**
   - `.gitignore`, `.node-version` (`22` for Cloudflare compatibility)
   - `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `index.html`
   - `public/icons/icon.svg`, `icon-192.png`, `icon-512.png`, `maskable-icon-512.png`, `apple-touch-icon.png`
   - `src/index.css`, `src/main.tsx`, `src/App.tsx`, `src/components/Header/AppHeader.tsx`
   - `src/test/setup.ts`, `src/__tests__/App.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
+- **Phase 2 Implemented Files & Packages:**
+  - Installed `zustand` (`^5.1.0`) and `idb-keyval` (`^6.3.0`)
+  - `src/types/domain.ts` (shared types: `LogicalDate`, `Subject`, `StudySession`, `TodoTask`, `MultiDayTaskPlan`, `Habit`, `DDayGoal`, `ActiveTimerState`, `RingMetric`, `ProductivityScoreBreakdown`)
+  - `src/utils/date.ts` (`getLogicalStudyDate`, 5:00 AM boundaries, `splitSessionByLogicalDay`, compact duration formatters)
+  - `src/utils/score.ts` (`calculateDailyProductivity`, `calculateProductivityScore` 45/35/20 weights, zero-item 0% rule, live active-timer 5:00 AM overlap)
+  - `src/store/idbStorage.ts` (`idb-keyval` IndexedDB adapter with `localStorage` fallback + synchronous `activeTimer` mirror)
+  - `src/store/useAppStore.ts` (Zustand persisted store for goals, subjects, sessions, tasks, habits, D-Day, and active timer)
+  - `src/components/Header/ActivityRing.tsx` (SVG `stroke-dasharray` / `stroke-dashoffset` single & concentric 3-ring gauges)
+  - Updated `src/components/Header/AppHeader.tsx` (live 3-ring readouts, hover/click/touch-hold breakdown popover, daily goal quick-presets & steppers)
+  - Tests added/updated: `src/utils/__tests__/date.test.ts`, `src/utils/__tests__/score.test.ts`, `src/store/__tests__/useAppStore.test.ts`, `src/components/Header/__tests__/AppHeader.test.tsx`, `src/__tests__/App.test.tsx`, `src/__tests__/crossPlatformLayout.test.tsx`
 - **Removed:** Leftover `.next/` directory deleted and Next.js `.gitignore` replaced.
-- **Verified Local Toolchain & Phase 1 Checks:**
+- **Verified Local Toolchain & Phase 2 Checks:**
   - Node.js `v26.12.0` (`/opt/homebrew/bin/node`), npm `11.20.0`, Git `2.54.0`
   - `npx tsc --noEmit` passing
-  - `npx vitest run` passing (`11` tests across `2` test files: `3` shell tests + `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape layout tests)
+  - `npx vitest run` passing (`30` tests across `6` test files, including multi-timezone `America/New_York`, `UTC`, `Asia/Kolkata` and `8` cross-platform macOS/Windows/iOS/Android Portrait & Landscape checks)
   - `npm run build` passing (generates `dist/manifest.webmanifest`, `dist/sw.js` with 10 precache entries, and `dist/registerSW.js`)
 
 ---
@@ -35,13 +45,13 @@
   - [x] Add cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
   - [x] Initialize local Git repository & commit #1
   - [x] Push to chosen GitHub account & deploy via Cloudflare Pages
-- [ ] **Phase 2: Time Engine, IndexedDB Persistence & Interactive 3-Ring Header**
-  - [ ] Domain types (`src/types/domain.ts`)
-  - [ ] 5:00 AM `getLogicalStudyDate` + boundary session splitting + unit tests
-  - [ ] `45/35/20` Productivity Score + zero-item ring rules + unit tests
-  - [ ] Zustand + IndexedDB (`idb-keyval`) persisted store
-  - [ ] Interactive SVG 3-Ring Header + hover/long-press popovers
-  - [ ] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
+- [x] **Phase 2: Time Engine, IndexedDB Persistence & Interactive 3-Ring Header**
+  - [x] Domain types (`src/types/domain.ts`)
+  - [x] 5:00 AM `getLogicalStudyDate` + boundary session splitting + unit tests
+  - [x] `45/35/20` Productivity Score + zero-item ring rules + unit tests
+  - [x] Zustand + IndexedDB (`idb-keyval`) persisted store
+  - [x] Interactive SVG 3-Ring Header + hover/long-press popovers
+  - [x] Cross-platform Portrait & Landscape tests (macOS, Windows, iOS, Android)
 - [ ] **Phase 3: Focus Timer, Wake Lock, Analytics, Behavioral Engine & D-Day Tracker (Tab 1)**
   - [ ] Subject manager (CRUD, color, archive, daily goal, daily totals)
   - [ ] Timestamp-accurate Stopwatch + Countdown Pomodoro/custom timer
@@ -86,8 +96,9 @@
 - **2026-11-26 — Phase 1 Implemented & Verified:** Cleaned `.next/`, replaced `.gitignore`, added `.node-version` (`22`), scaffolded Vite 8 + React 19 + TypeScript 7 + Tailwind CSS v4 + Vitest 5 + `vite-plugin-pwa` 2, generated PNG/SVG PWA icons, built responsive 3-tab shell + 3-ring header skeleton, verified tests/build, and initialized local Git on `main`.
 - **2026-11-26 — Scope Update (Phase 6):** Added **Landscape Optimization** explicitly to Phase 6 in `PLAN.md` and `PROGRESS.md` (covering mobile/tablet landscape layouts, short viewports, left/right notched safe areas, and full-screen landscape clock ergonomics).
 - **2026-11-26 — Day-1 Deployment Live & Cross-Platform Portrait/Landscape Testing Rule Added:** User linked GitHub (`ambushkarenge/UProSC`) + Cloudflare (`https://uprosc.ambush-darth.workers.dev`). Added mandatory per-phase testing rule across **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts in `AGENT.md`, `PLAN.md`, and `PROGRESS.md`, plus `src/__tests__/crossPlatformLayout.test.tsx` (8 profiles) and landscape safe-area polish.
+- **2026-11-26 — Phase 2 Implemented & Verified:** Installed `zustand` and `idb-keyval`; built `src/types/domain.ts`, 5:00 AM local logical-date & boundary-splitting engine (`src/utils/date.ts`), `45/35/20` Productivity Score + zero-item ring engine (`src/utils/score.ts`), offline IndexedDB + `localStorage` active-timer mirror store (`src/store/idbStorage.ts`, `src/store/useAppStore.ts`), and interactive SVG 3-Ring Header + hover/click/touch-hold breakdown popover with daily goal controls (`src/components/Header/ActivityRing.tsx`, `src/components/Header/AppHeader.tsx`). Verified `tsc --noEmit`, `vitest run` (`30` tests across `6` files and 3 timezones), and `npm run build`.
 
 ---
 
 ## 4. Next Immediate Step
-Wait for the user's explicit go-ahead for **Phase 2**. On approval, install `zustand` and `idb-keyval`, create `src/types/domain.ts`, implement and unit-test `date.ts` (5:00 AM rule + boundary splitting) and `score.ts` (`45/35/20` + zero-item rule), wire IndexedDB persistence, upgrade `AppHeader.tsx` with live interactive SVG rings and popovers, and update cross-platform Portrait & Landscape tests for macOS, Windows, iOS, and Android.
+Wait for the user's explicit go-ahead for **Phase 3**. On approval, build **Tab 1 (Focus Timer & Analytics)**: subject manager (CRUD, colors, archiving, daily goals), timestamp-accurate stopwatch + countdown Pomodoro timer (`useTimestampTimer.ts`), Full-Screen Clock + Screen Wake Lock API (`useWakeLock.ts`), Web Audio chimes (`sound.ts`), D-Day target/hour tracker (`DDayTracker.tsx`), SVG focus analytics (`FocusAnalytics.tsx`), Duolingo-style behavioral pace companion (`BehavioralCompanion.tsx`), and cross-platform Portrait & Landscape tests.
