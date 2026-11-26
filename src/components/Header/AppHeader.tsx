@@ -69,7 +69,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-950/85">
-      <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+      <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:gap-3 [@media(orientation:landscape)_and_(max-height:500px)]:py-1.5">
         {/* Brand Identity */}
         <div className="flex items-center gap-2.5">
           <img
@@ -82,7 +82,7 @@ export function AppHeader() {
               <span className="text-base font-bold tracking-tight text-slate-900 dark:text-white">
                 UProSC
               </span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <span className="hidden rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-600 sm:inline-block dark:bg-slate-800 dark:text-slate-300">
                 PWA
               </span>
             </div>
@@ -159,7 +159,7 @@ export function AppHeader() {
             <div
               role="dialog"
               aria-label="Sub-App Launcher preview"
-              className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900"
+              className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">

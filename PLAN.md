@@ -148,18 +148,20 @@ export interface Habit {
   - `[NEW]` `src/utils/habitStats.ts`, `src/utils/__tests__/habitStats.test.ts`
   - `[NEW]` `src/features/habits/HabitsTab.tsx`, `ConsistencyHeatmap.tsx`
 
-### Phase 6: Modular Sub-Apps Architecture, Polish & Full PWA Audit
-- **Goal:** Implement `src/subapps/registry.ts` plugin registry, 9-dot App Launcher (`Cmd/Ctrl + K`), responsive Drawer (desktop) / Bottom Sheet (mobile) overlay keeping active timers uninterrupted, starter sub-apps (Ambient Focus Audio + JSON Backup/Restore), and full offline/cross-platform PWA audit.
-- **Web Dev Concepts:** Plugin/registry architecture, `React.lazy` & `Suspense` code splitting, global keyboard shortcuts & accessible modals, Web Audio noise synthesis, Lighthouse PWA & offline verification.
+### Phase 6: Modular Sub-Apps Architecture, Landscape Optimization & Full PWA Audit
+- **Goal:** Implement `src/subapps/registry.ts` plugin registry, 9-dot App Launcher (`Cmd/Ctrl + K`), responsive Drawer (desktop) / Bottom Sheet (mobile) overlay keeping active timers uninterrupted, starter sub-apps (Ambient Focus Audio + JSON Backup/Restore), **Landscape Optimization** across all 3 tabs + Full-Screen Timer (handling short viewports, left/right notched safe areas `env(safe-area-inset-left/right)`, and split two-column layouts on mobile/tablet landscape), and full offline/cross-platform PWA audit.
+- **Web Dev Concepts:** Plugin/registry architecture, `React.lazy` & `Suspense` code splitting, global keyboard shortcuts & accessible modals, Web Audio noise synthesis, responsive `orientation: landscape` & short-viewport (`max-height`) CSS/Tailwind layouts + safe-area insets, Lighthouse PWA & offline verification.
 - **Files:**
   - `[NEW]` `src/subapps/types.ts`, `src/subapps/registry.ts`, `src/components/SubAppHost/AppLauncherPopover.tsx`, `SubAppDrawer.tsx`
   - `[NEW]` `src/subapps/ambient-audio/*`, `src/subapps/backup-sync/*`
+  - `[MODIFY]` App shell, Header, Full-Screen Timer, Calendar, and Heatmap layouts for **Landscape Optimization**
 
 ---
 
 ## 5. Verification Plan
-- **Automated Tests (Vitest) & Build:** Run `export PATH="/opt/homebrew/bin:$PATH" && npx vitest run && npm run build` after every phase.
+- **Automated Tests (Vitest), Typecheck & Build:** Run `export PATH="/opt/homebrew/bin:$PATH" && npx tsc --noEmit && npx vitest run && npm run build` after every phase.
+- **Per-Phase Cross-Platform Portrait & Landscape Tests:** After every phase, add/update automated tests covering **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts (verifying safe-area insets, short-viewport landscape rules, light/dark `prefers-color-scheme` support, and phase UI interactions across all 8 profiles in `src/__tests__/crossPlatformLayout.test.tsx` or feature tests).
 - **Manual Cross-Platform PWA Verification:**
   - Install via iOS Safari (`Add to Home Screen`) and Chrome (`Install App`) using live Cloudflare Pages HTTPS URL.
-  - Verify strict 3-tab + 3-ring layout with safe-area padding and light/dark OS theme adaptation.
+  - Verify strict 3-tab + 3-ring layout with safe-area padding (portrait & **Landscape Optimization** on mobile/tablet) on macOS, Windows, iOS, and Android, plus light/dark OS theme adaptation.
   - Test Airplane Mode offline reload, background timer wall-clock accuracy, Screen Wake Lock in full-screen, cross-tab Ring/Score updates, and uninterrupted background timer while opening Sub-Apps.

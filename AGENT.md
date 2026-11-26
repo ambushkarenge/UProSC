@@ -51,4 +51,6 @@ The user is learning web development simultaneously while building UProSC. Follo
 - **Node/npm `PATH`:** Node (`v26.12.0`) and npm (`11.20.0`) are installed via Homebrew at `/opt/homebrew/bin`, which is not on default non-interactive sandbox `PATH`. Always prefix shell commands with `export PATH="/opt/homebrew/bin:$PATH"`.
 - **Hosting Target:** **GitHub + Cloudflare Pages** (chosen for unlimited free static bandwidth and easy Git auto-deploys; Service Worker + IndexedDB make the app run 100% offline once cached).
 - **Account Privacy Rule:** Do **NOT** link, push to, or configure any existing GitHub or Cloudflare account automatically. Initialize and maintain the local Git repo cleanly, and let the user supply/connect their chosen GitHub and Cloudflare Pages accounts step-by-step when ready.
-- **Verification Discipline:** Run `npx vitest run` and `npm run build` after changes and never mark a phase done with failing checks.
+- **Verification & Cross-Platform Testing Discipline:**
+  - Run `npx tsc --noEmit`, `npx vitest run`, and `npm run build` after changes and never mark a phase done with failing checks.
+  - **After every phase**, add/update tests covering **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts (responsive layout/safe-area/orientation checks plus interactive behavior across all 8 platform × orientation profiles).
