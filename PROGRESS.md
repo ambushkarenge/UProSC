@@ -1,6 +1,6 @@
 # PROGRESS.md — UProSC Live Status & Memory Log
 
-**Current Status:** **Phase 3B Complete — Paused before Phase 4** (awaiting user's explicit go-ahead to start Phase 4; run Cloudflare D1 provisioning before pushing `wrangler.jsonc` to live auto-deploy).  
+**Current Status:** **Phase 3B Complete & Deployed — Ready for Phase 4** (awaiting user's explicit go-ahead to start Phase 4).  
 **Last Updated:** 2026-11-27
 
 ---
@@ -131,9 +131,9 @@
 - **2026-11-26 — Phase 3 Implemented & Verified:** Built Tab 1 (`TimerTab`, `FullScreenClock`, `SubjectManager`, `DDayTracker`, `BehavioralCompanion`, `FocusAnalytics`), timestamp-delta timer hook (`useTimestampTimer`), Screen Wake Lock hook (`useWakeLock`), Web Audio chimes (`sound.ts`), analytics/streak engines (`focusAnalytics.ts`, `behavioral.ts`), and 18 new unit/feature/cross-platform tests (`48` tests passing across `11` files).
 - **2026-11-27 — Scope Update (Multi-User Isolation & Low-Traffic Sync Added as Immediate Priority):** Added **Phase 3B** (before Phase 4) in `AGENT.md`, `PLAN.md`, and `PROGRESS.md`, and propagated user-scoped persistence + delta-sync metadata across Phases 4–6 (`TodoTask`, `MultiDayTaskPlan`, `Habit` per-date merge, user-scoped backup/sync sub-app, and landscape header polish).
 - **2026-11-27 — Sync Backend Confirmed (Option 1):** User selected **Option 1: Cloudflare Worker API (`/api/auth/*`, `/api/sync/*`) + Cloudflare D1 (SQLite)** in `PLAN.md` and `PROGRESS.md`; paused with zero project code edits pending explicit user command to start Phase 3B.
-- **2026-11-27 — Phase 3B Implemented & Verified:** Built Cloudflare Worker API + D1 migration (`wrangler.jsonc`, `migrations/0001_multi_user_sync.sql`, `worker/*`), user-scoped IndexedDB + `localStorage` mirror persistence & legacy migration (`accountManager.ts`, `idbStorage.ts`, `useAppStore.ts`), low-traffic CRDT/LWW delta sync (`src/sync/*`), `AccountSyncModal` + header sync pill (`AppHeader.tsx`), Workbox `/api/` exclusion (`vite.config.ts`), and 14 new unit/worker/UI/cross-platform tests (`62` tests passing across `14` files).
+- **2026-11-27 — Phase 3B Implemented, Configured & Verified:** Built Cloudflare Worker API + D1 migration (`wrangler.jsonc`, `migrations/0001_multi_user_sync.sql`, `worker/*`), user-scoped IndexedDB + `localStorage` mirror persistence & legacy migration (`accountManager.ts`, `idbStorage.ts`, `useAppStore.ts`), low-traffic CRDT/LWW delta sync (`src/sync/*`), `AccountSyncModal` + header sync pill (`AppHeader.tsx`), Workbox `/api/` exclusion (`vite.config.ts`), and 14 new unit/worker/UI/cross-platform tests (`62` tests passing across `14` files). Configured `uprosc-db` (`39de7fe8-4ea0-4a34-819c-72098973e60d`) in `wrangler.jsonc` and verified deployment.
 
 ---
 
 ## 4. Next Immediate Step
-Before pushing `main` for Cloudflare auto-deployment, create and link your D1 database (`npx wrangler d1 create uprosc-db`, update `database_id` in `wrangler.jsonc`, and run `npx wrangler d1 migrations apply uprosc-db --remote`). Next roadmap phase: wait for the user's explicit go-ahead to start **Phase 4** (`To-Do List, Multi-Day Auto-Split & Calendar / .ics Integration` in Tab 2).
+Wait for the user's explicit go-ahead to start **Phase 4** (`To-Do List, Multi-Day Auto-Split & Calendar / .ics Integration` in Tab 2: Today's Tasks anchored to 5:00 AM, priority tags feeding Ring 2, Multi-Day *"Split Evenly Across Days"* planner, collapsible Monthly/Weekly Calendar view with D-Day markers, RFC 5545 `.ics` export, delta-sync wiring, and cross-platform Portrait & Landscape tests).
