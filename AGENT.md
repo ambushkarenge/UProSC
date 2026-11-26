@@ -18,7 +18,7 @@ The user is learning web development simultaneously while building UProSC. Follo
    - **What is going to be implemented** in the upcoming phase (files, architecture, and web development concepts covered).
 2. **Pause and wait for the user's explicit go-ahead** before implementing that phase.
 3. Keep explanations clear, practical, and tied directly to the code being built.
-4. At the end of each phase, verify with tests/build and update `PROGRESS.md` (and `PLAN.md` if any design changed).
+4. **End-of-Phase Checklist:** After `npx tsc --noEmit`, `npx vitest run`, and `npm run build` pass and `PROGRESS.md` (and `PLAN.md` if any design changed) is updated, commit locally and run `git push origin main`. *(Note: `git push` requires network access outside the terminal sandbox, so prompt the user once for approval unless they run `git push origin main` themselves.)*
 
 ---
 
@@ -50,7 +50,7 @@ The user is learning web development simultaneously while building UProSC. Follo
 ## 4. Environment, Git & Deployment Guardrails
 - **Node/npm `PATH`:** Node (`v26.12.0`) and npm (`11.20.0`) are installed via Homebrew at `/opt/homebrew/bin`, which is not on default non-interactive sandbox `PATH`. Always prefix shell commands with `export PATH="/opt/homebrew/bin:$PATH"`.
 - **Hosting Target:** **GitHub + Cloudflare Pages** (chosen for unlimited free static bandwidth and easy Git auto-deploys; Service Worker + IndexedDB make the app run 100% offline once cached).
-- **Account Privacy Rule:** Do **NOT** link, push to, or configure any existing GitHub or Cloudflare account automatically. Initialize and maintain the local Git repo cleanly, and let the user supply/connect their chosen GitHub and Cloudflare Pages accounts step-by-step when ready.
+- **Git Remote & Account Guardrail:** Do **NOT** reconfigure `origin` or modify GitHub/Cloudflare account settings automatically. Follow the **End-of-Phase Checklist** above (`commit` locally and `git push origin main`, prompting once for sandbox network approval unless the user runs it themselves).
 - **Verification & Cross-Platform Testing Discipline:**
   - Run `npx tsc --noEmit`, `npx vitest run`, and `npm run build` after changes and never mark a phase done with failing checks.
   - **After every phase**, add/update tests covering **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts (responsive layout/safe-area/orientation checks plus interactive behavior across all 8 platform × orientation profiles).

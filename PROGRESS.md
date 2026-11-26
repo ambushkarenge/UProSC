@@ -9,7 +9,8 @@
 - **Workspace Path:** `/Users/varuntejbhukya/Documents/UProSC`
 - **Git & Live Hosting:**
   - GitHub Remote (`origin`): `https://github.com/ambushkarenge/UProSC.git` (`main`)
-  - Live Cloudflare Deployment: `https://uprosc.ambush-darth.workers.dev` (Phase 1 live; Phase 2 ready locally for commit/push when user chooses)
+  - GitHub Actions CI: `.github/workflows/ci.yml` (`Typecheck, Test & Build` on `main`)
+  - Live Cloudflare Deployment: `https://uprosc.ambush-darth.workers.dev` (auto-deploys from GitHub `main`)
 - **Phase 1 Implemented Files:**
   - `.gitignore`, `.node-version` (`22` for Cloudflare compatibility)
   - `package.json`, `package-lock.json`, `tsconfig.json`, `vite.config.ts`, `index.html`
@@ -97,6 +98,7 @@
 - **2026-11-26 — Scope Update (Phase 6):** Added **Landscape Optimization** explicitly to Phase 6 in `PLAN.md` and `PROGRESS.md` (covering mobile/tablet landscape layouts, short viewports, left/right notched safe areas, and full-screen landscape clock ergonomics).
 - **2026-11-26 — Day-1 Deployment Live & Cross-Platform Portrait/Landscape Testing Rule Added:** User linked GitHub (`ambushkarenge/UProSC`) + Cloudflare (`https://uprosc.ambush-darth.workers.dev`). Added mandatory per-phase testing rule across **macOS, Windows, iOS, and Android** in **both Portrait and Landscape** layouts in `AGENT.md`, `PLAN.md`, and `PROGRESS.md`, plus `src/__tests__/crossPlatformLayout.test.tsx` (8 profiles) and landscape safe-area polish.
 - **2026-11-26 — Phase 2 Implemented & Verified:** Installed `zustand` and `idb-keyval`; built `src/types/domain.ts`, 5:00 AM local logical-date & boundary-splitting engine (`src/utils/date.ts`), `45/35/20` Productivity Score + zero-item ring engine (`src/utils/score.ts`), offline IndexedDB + `localStorage` active-timer mirror store (`src/store/idbStorage.ts`, `src/store/useAppStore.ts`), and interactive SVG 3-Ring Header + hover/click/touch-hold breakdown popover with daily goal controls (`src/components/Header/ActivityRing.tsx`, `src/components/Header/AppHeader.tsx`). Verified `tsc --noEmit`, `vitest run` (`30` tests across `6` files and 3 timezones), and `npm run build`.
+- **2026-11-26 — Phase 2 Wrap-Up & CI Setup:** Added `.github/workflows/ci.yml` and updated `AGENT.md` with the End-of-Phase `commit` + `git push origin main` checklist before Phase 3.
 
 ---
 
